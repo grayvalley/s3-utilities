@@ -1,7 +1,11 @@
 import logging
-import io
+import pickle
 import boto3
 import json
+import io
+
+import pandas as pd
+
 from botocore.exceptions import ClientError
 
 
@@ -36,26 +40,29 @@ class S3Client:
         data = resp["Body"].read().decode()
         return data
 
-    def upload_pickle_buffer(self, pickle_buffer, bucket, key):
+    def upload_dataframe(self, dataframe, bucket, key):
         """
         Upload pickle buffer to an S3 bucket
 
-        :param pickle_buffer: the pickle buffer containing our data
+        :param dataframe: the dataframe containing our data
         :param bucket: Bucket to upload to
         :param key: unique key for the item
 
         :return: True if file was uploaded, else False
 
         """
-        if not isinstance(pickle_buffer, io.BytesIO):
-            raise TypeError("pickle_buffer")
+        buffer = pickle.dumps(dataframe)
 
         try:
-            self._cli.put_object(Bucket=bucket, Body=pickle_buffer.getvalue(), Key=key)
+            self._cli.put_object(Bucket=bucket, Body=buffer, Key=key)
             return True
         except Exception as e:
             logging.error(e)
             return False
+
+    def download_dataframe(self, bucket, key):
+        resp = self._cli.get_object(Bucket=bucket, Key=key)
+        return pickle.loads(resp['Body'].read())
 
     def upload_file(self, file_name, bucket, object_name=None):
         """
