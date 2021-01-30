@@ -28,5 +28,12 @@ def main():
     resp_df = client.download_dataframe("gvt-test", "pickle-hello-world")
     print("Downloaded:", resp_df)
 
+    # Get item names in bucket
+    items = client.list_items("gvt-test")
+    print("Items:", items)
+
+    # Create a new folder in bucket
+    client.create_folder("gvt-test", "new-folder")
+
 if __name__ == '__main__':
     main()
