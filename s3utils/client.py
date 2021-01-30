@@ -1,12 +1,28 @@
 import logging
 import boto3
+import json
 from botocore.exceptions import ClientError
 
 
 class S3Client:
 
-    def __init__(self):
-        self._cli = boto3.client('s3')
+    def __init__(self, access_key_id, secret_access_key):
+        self._session = boto3.Session(
+            aws_access_key_id=access_key_id,
+            aws_secret_access_key=secret_access_key)
+        self._cli = self._session.client("s3")
+
+    def upload_json(self, data_dict, bucket, key):
+        try:
+            self._cli.put_object(Bucket=bucket, Body=json.dumps(data_dict), Key=key)
+        except Exception as e:
+            print(e)
+            return
+
+    def download_json(self, bucket, key):
+        resp = self._cli.get_object(Bucket=bucket, Key=key)
+        data = resp["Body"].read().decode()
+        return data
 
     def upload_file(self, file_name, bucket, object_name=None):
         """
