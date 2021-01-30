@@ -116,3 +116,45 @@ class S3Client:
             raise TypeError('file_name')
 
         return self._cli.download_file(bucket, object_name, file_name)
+
+    def list_items(self, bucket_name):
+        """
+        List item names in a bucket.
+
+        :param bucket_name: name of the bucket we are interested in
+
+        :return: list of item keys (not folders).
+        """
+        def is_folder(item):
+            return '/' in item["Key"]
+        items = []
+        for content in self._cli.list_objects(Bucket=bucket_name)['Contents']:
+            if not is_folder(content):
+                items.append(content['Key'])
+        return items
+
+    def list_folders(self, bucket_name):
+        """
+        List folder names in a bucket.
+
+        :param bucket_name: name of the bucket we are interested in
+
+        :return: list of folder names
+        """
+        def is_folder(item):
+            return '/' in item["Key"]
+        folders = []
+        for content in self._cli.list_objects(Bucket=bucket_name)['Contents']:
+            if is_folder(content):
+                folders.append(content['Key'])
+        return folders
+
+    def create_folder(self, bucket_name, folder_name):
+        """
+        Create a folder into S3 bucket.
+
+        :param bucket_name: name of the bucket in which we want to create the wolder.
+        :param folder_name: name of the folder we want to create
+
+        """
+        self._cli.put_object(Bucket=bucket_name, Key=(folder_name + '/'))
