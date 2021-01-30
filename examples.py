@@ -8,7 +8,7 @@ from s3utils import S3Client
 def main():
 
     aws_access_key_id = ''
-    aws_secret_access_key = '+H+Ev8i+nBiOGJ8MgA9vbcByCJjfh'
+    aws_secret_access_key = ''
 
     client = S3Client(aws_access_key_id, aws_secret_access_key)
 
