@@ -10,7 +10,7 @@ ata_dict = {"Hello": "World"}
 client.upload_json(data_dict, "gvt-test", "json-hello-world")
 ```
 
-## Downloading files
+## Downloading JSON
 ```python
 resp_dict = client.download_json("gvt-test", "json-hello-world")
 print("Downloaded:", resp_dict)
