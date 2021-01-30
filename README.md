@@ -1,17 +1,28 @@
 # s3-utilities
 
 
-## Uploading files
+## Uploading JSON
 ```python
-from s3utils import S3Client
 
 client = S3Client()
 
-client.upload_file(self, file_name, bucket, object_name=None)
+ata_dict = {"Hello": "World"}
+client.upload_json(data_dict, "gvt-test", "json-hello-world")
 ```
 
 ## Downloading files
 ```python
-s = "Python syntax highlighting"
-print s
+resp_dict = client.download_json("gvt-test", "json-hello-world")
+print("Downloaded:", resp_dict)
+```
+
+## Upload DataFrame
+```python
+df = pd.DataFrame(np.random.randint(0, 100, size=(100, 4)), columns=list('ABCD'))
+client.upload_dataframe(df, "gvt-test", "pickle-hello-world")
+```
+## Download DataFrame
+```python
+resp_df = client.download_dataframe("gvt-test", "pickle-hello-world")
+print("Downloaded:", resp_df)
 ```
