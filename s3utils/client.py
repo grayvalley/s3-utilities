@@ -1,12 +1,68 @@
 import logging
+import pickle
 import boto3
+import json
+import io
+
+import pandas as pd
+
 from botocore.exceptions import ClientError
 
 
 class S3Client:
 
-    def __init__(self):
-        self._cli = boto3.client('s3')
+    def __init__(self, access_key_id, secret_access_key):
+        self._session = boto3.Session(
+            aws_access_key_id=access_key_id,
+            aws_secret_access_key=secret_access_key)
+        self._cli = self._session.client("s3")
+
+    def upload_json(self, data_dict, bucket, key):
+        """
+        Upload dictionary as JSON to an S3 bucket
+
+        :param data_dict: the dictionary containing our data
+        :param bucket: Bucket to upload to
+        :param key: unique key for the item
+
+        :return: True if file was uploaded, else False
+
+        """
+        try:
+            self._cli.put_object(Bucket=bucket, Body=json.dumps(data_dict), Key=key)
+            return True
+        except Exception as e:
+            logging.error(e)
+            return False
+
+    def download_json(self, bucket, key):
+        resp = self._cli.get_object(Bucket=bucket, Key=key)
+        data = resp["Body"].read().decode()
+        return data
+
+    def upload_dataframe(self, dataframe, bucket, key):
+        """
+        Upload pickle buffer to an S3 bucket
+
+        :param dataframe: the dataframe containing our data
+        :param bucket: Bucket to upload to
+        :param key: unique key for the item
+
+        :return: True if file was uploaded, else False
+
+        """
+        buffer = pickle.dumps(dataframe)
+
+        try:
+            self._cli.put_object(Bucket=bucket, Body=buffer, Key=key)
+            return True
+        except Exception as e:
+            logging.error(e)
+            return False
+
+    def download_dataframe(self, bucket, key):
+        resp = self._cli.get_object(Bucket=bucket, Key=key)
+        return pickle.loads(resp['Body'].read())
 
     def upload_file(self, file_name, bucket, object_name=None):
         """
