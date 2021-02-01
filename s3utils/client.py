@@ -131,8 +131,14 @@ class S3Client:
 
         :return: list of folder names
         """
+        response = self._cli.list_objects(Bucket=bucket_name)
+
+        if 'Contents' not in response:
+            return []
+
         def is_folder(item):
             return '/' in item["Key"]
+
         folders = []
         for content in self._cli.list_objects(Bucket=bucket_name)['Contents']:
             if is_folder(content):
