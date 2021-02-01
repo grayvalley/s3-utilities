@@ -21,6 +21,7 @@ client.upload_dataframe(df, "gvt-test-bucket", "test-file")
 # create a client
 client = S3Client(aws_access_key_id, aws_secret_access_key)
 
+# download gzipped dataframe
 resp_df = client.download_dataframe("gvt-test-bucket", "test-file")
 
 ```
