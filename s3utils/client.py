@@ -1,6 +1,6 @@
 import logging
-import pickle
 import boto3
+import gzip
 import json
 import io
 
@@ -36,94 +36,79 @@ class S3Client:
             return False
 
     def download_json(self, bucket, key):
+
         resp = self._cli.get_object(Bucket=bucket, Key=key)
         data = resp["Body"].read().decode()
-        return data
+        return json.loads(data)
 
-    def upload_dataframe(self, dataframe, bucket, key):
+    def download_dataframe(self, bucket, key, index_col=0, header=0):
         """
-        Upload pickle buffer to an S3 bucket
+        Download gzip compressed pandas.DataFrame from a S3 bucket.
 
-        :param dataframe: the dataframe containing our data
-        :param bucket: Bucket to upload to
-        :param key: unique key for the item
+        :param bucket: bucket name
+        :param key: key for the item
+        :param index_col: index column location
+        :param header: header row location
 
-        :return: True if file was uploaded, else False
-
+        :return: pandas.DataFrame if success, None if failure
         """
-        buffer = pickle.dumps(dataframe)
 
         try:
-            self._cli.put_object(Bucket=bucket, Body=buffer, Key=key)
-            return True
+            obj = self._cli.get_object(Bucket=bucket, Key=key)
+        except ClientError as e:
+            logging.error(e)
+            return None
+
+        try:
+            gz = gzip.GzipFile(fileobj=obj['Body'])
         except Exception as e:
             logging.error(e)
-            return False
+            return None
 
-    def download_dataframe(self, bucket, key):
-        resp = self._cli.get_object(Bucket=bucket, Key=key)
-        return pickle.loads(resp['Body'].read())
+        # load stream directly to DF
+        return pd.read_csv(gz, index_col=index_col, header=header, dtype=str)
 
-    def upload_file(self, file_name, bucket, object_name=None):
+    def upload_dataframe(self, df, bucket, key):
         """
+        Upload pandas.Dataframe to a S3 bucket
 
-        Upload a file to an S3 bucket
-
-        :param file_name: File to upload
-        :param bucket: Bucket to upload to
-        :param object_name: S3 object name. If not specified then file_name is used
+        :param df: the dataframe
+        :param bucket: bucket name
+        :param key: key for the dataframe
 
         :return: True if file was uploaded, else False
         """
-        if not isinstance(file_name, str):
-            raise TypeError('file_name')
 
-        if not isinstance(bucket, str):
-            raise TypeError('bucket')
-
-        # If S3 object_name was not specified, use file_name
-        if object_name is None:
-            object_name = file_name
-
-        # Upload the file
         try:
-            response = self._cli.upload_file(file_name, bucket, object_name)
+            # write DF to string stream
+            csv_buffer = io.StringIO()
+            df.to_csv(csv_buffer, index=False)
+
+            # reset stream position
+            csv_buffer.seek(0)
+            # create binary stream
+            gz_buffer = io.BytesIO()
+
+            # compress string stream using gzip
+            with gzip.GzipFile(mode='w', fileobj=gz_buffer) as gz_file:
+                gz_file.write(bytes(csv_buffer.getvalue(), 'utf-8'))
+
+            # write stream to S3
+            obj = self._cli.put_object(Bucket=bucket, Key=key, Body=gz_buffer.getvalue())
+
         except ClientError as e:
             logging.error(e)
             return False
 
         return True
 
-    def download_file(self, bucket, object_name, file_name):
-        """
-
-        Download a file from an S3 bucket
-
-        :param file_name: File to download
-        :param bucket: Bucket to download from
-        :param object_name: S3 object name. If not specified then file_name is used
-
-        :return: downloaded data
-        """
-
-        if not isinstance(bucket, str):
-            raise TypeError('bucket')
-
-        if not isinstance(object_name, str):
-            raise TypeError('object_name')
-
-        if not isinstance(file_name, str):
-            raise TypeError('file_name')
-
-        return self._cli.download_file(bucket, object_name, file_name)
-
     def list_items(self, bucket_name):
         """
         List item names in a bucket.
 
-        :param bucket_name: name of the bucket we are interested in
+        :param bucket_name: name of the bucket
 
-        :return: list of item keys (not folders).
+        :return: list of item keys.
         """
         def is_folder(item):
             return '/' in item["Key"]
@@ -153,8 +138,8 @@ class S3Client:
         """
         Create a folder into S3 bucket.
 
-        :param bucket_name: name of the bucket in which we want to create the wolder.
-        :param folder_name: name of the folder we want to create
+        :param bucket_name: bucket name.
+        :param folder_name: folder name
 
         """
         self._cli.put_object(Bucket=bucket_name, Key=(folder_name + '/'))
