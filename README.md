@@ -15,7 +15,7 @@ client.upload_dataframe(df, "gvt-test-bucket", "test-file")
 
 ```
 
-## Download dataframe
+## Download DataFrame
 ```python
 
 # create a client
