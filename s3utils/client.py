@@ -117,6 +117,7 @@ class S3Client:
 
         def is_folder(item):
             return '/' in item["Key"]
+
         items = []
         for content in response['Contents']:
             if not is_folder(content):
