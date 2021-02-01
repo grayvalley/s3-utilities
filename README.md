@@ -1,28 +1,27 @@
 # s3-utilities
-
-
-## Uploading JSON
-```python
-
-client = S3Client()
-
-ata_dict = {"Hello": "World"}
-client.upload_json(data_dict, "gvt-test", "json-hello-world")
-```
-
-## Downloading JSON
-```python
-resp_dict = client.download_json("gvt-test", "json-hello-world")
-print("Downloaded:", resp_dict)
-```
+Utility tool for storing and downloading pandas DataFrames to and from AWS S3.
 
 ## Upload DataFrame
 ```python
+
+# create a client
+client = S3Client(aws_access_key_id, aws_secret_access_key)
+
+# a random pandas dataframe
 df = pd.DataFrame(np.random.randint(0, 100, size=(100, 4)), columns=list('ABCD'))
-client.upload_dataframe(df, "gvt-test", "pickle-hello-world")
+
+# upload gzipped dataframe
+client.upload_dataframe(df, "gvt-test-bucket", "test-file")
+
 ```
-## Download DataFrame
+
+## Download dataframe
 ```python
-resp_df = client.download_dataframe("gvt-test", "pickle-hello-world")
-print("Downloaded:", resp_df)
+
+# create a client
+client = S3Client(aws_access_key_id, aws_secret_access_key)
+
+resp_df = client.download_dataframe("gvt-test-bucket", "test-file")
+
 ```
+
