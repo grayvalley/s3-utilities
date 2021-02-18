@@ -17,6 +17,17 @@ class S3Client:
             aws_secret_access_key=secret_access_key)
         self._cli = self._session.client("s3")
 
+    @classmethod
+    def using_awsprofile(cls, profile_name):
+        '''
+        Alternative constructor using credentials stored in either credential or config file.
+        ref: https://boto3.amazonaws.com/v1/documentation/api/latest/guide/credentials.html
+        '''
+        obj = cls.__new__(cls)
+        obj._session = boto3.Session(profile_name=profile_name)
+        obj._cli = obj._session.client("s3")
+        return obj
+
     def upload_json(self, data_dict, bucket, key):
         """
         Upload dictionary as JSON to an S3 bucket
