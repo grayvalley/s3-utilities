@@ -1,4 +1,3 @@
-import logging
 import boto3
 import gzip
 import json
@@ -9,6 +8,8 @@ import pandas as pd
 
 from botocore.exceptions import ClientError
 
+import logging
+logger = logging.getLogger(__name__)
 
 class S3Client:
 
@@ -44,7 +45,7 @@ class S3Client:
             self._cli.put_object(Bucket=bucket, Body=json.dumps(data_dict), Key=key)
             return True
         except Exception as e:
-            logging.error(e)
+            logger.error(e)
             return False
 
     def download_json(self, bucket, key):
@@ -68,13 +69,13 @@ class S3Client:
         try:
             obj = self._cli.get_object(Bucket=bucket, Key=key)
         except ClientError as e:
-            logging.error(e)
+            logger.error(e)
             return None
 
         try:
             gz = gzip.GzipFile(fileobj=obj['Body'])
         except Exception as e:
-            logging.error(e)
+            logger.error(e)
             return None
 
         # load stream directly to DF
@@ -109,7 +110,7 @@ class S3Client:
             obj = self._cli.put_object(Bucket=bucket, Key=key, Body=gz_buffer.getvalue())
 
         except ClientError as e:
-            logging.error(e)
+            logger.error(e)
             return False
 
         return True
@@ -117,12 +118,12 @@ class S3Client:
     @staticmethod
     def _success_response(response, log_text):
         if not response:
-            logging.error(f'Received empty {log_text} response.')
+            logger.error(f'Received empty {log_text} response.')
             return False
         
         status = http.HTTPStatus(response['ResponseMetadata']['HTTPStatusCode'])
         if status != http.HTTPStatus.OK:
-            logging.error(f"{log_text.capitalize()} failed with HTTPStatus {status.description} and response \n {response}")
+            logger.error(f"{log_text.capitalize()} failed with HTTPStatus {status.description} and response \n {response}")
             return False
         else:
             return True
@@ -141,7 +142,7 @@ class S3Client:
             response = self._cli.put_object(Bucket=bucket, Key=key, Body=fileobj)
             return self.__class__._success_response(response, 'upload')
         except Exception as exn:
-            logging.exception(exn)
+            logger.exception(exn)
             return False
 
     def download_fileobj(self, bucket, key, filepath_or_buffer):
@@ -165,10 +166,10 @@ class S3Client:
             else:
                 return False
         except ClientError as e:
-            logging.exception(e)
+            logger.exception(e)
             return False
         except Exception as e:
-            logging.exception(e)
+            logger.exception(e)
             return False
         return True
 

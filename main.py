@@ -5,7 +5,7 @@ import posixpath
 
 import logging
 import logging.config
-#from logging.handlers import FileHandler
+logger = logging.getLogger(__name__)
 
 from s3utils import S3Client
 
@@ -44,18 +44,18 @@ def main():
     #bucket = 'gvt-test-bucket'
     bucket = 'gvt-bitmex-l1' # PROD
     for f in files:
-        logging.info(f'Preparing upload of {f}')
+        logger.info(f'Preparing upload of {f}')
         try:
             with open(f, 'rb') as f_hnd:
                 key = os.path.basename(f)
                 modkey = key.replace('%', posixpath.sep, 1) # 2021-02-10%XBTUSD%quote.pklgz -> 2021-02-10/XBTUSD%quote.pklg to generate folder in s3.
-                logging.info(f'Uploading to (bucket={bucket}, key={modkey})...')
+                logger.info(f'Uploading to (bucket={bucket}, key={modkey})...')
                 success = client.upload_fileobj(f_hnd, bucket=bucket, key=modkey)
                 if success:
-                    logging.info('Success.')
+                    logger.info('Success.')
                     # TODO: Delete file here...
         except Exception as exn:
-            logging.exception(exn)
+            logger.exception(exn)
             continue
             
 
