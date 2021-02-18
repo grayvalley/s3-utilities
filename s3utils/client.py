@@ -3,6 +3,7 @@ import boto3
 import gzip
 import json
 import io
+import http
 
 import pandas as pd
 
@@ -111,6 +112,64 @@ class S3Client:
             logging.error(e)
             return False
 
+        return True
+
+    @staticmethod
+    def _success_response(response, log_text):
+        if not response:
+            logging.error(f'Received empty {log_text} response.')
+            return False
+        
+        status = http.HTTPStatus(response['ResponseMetadata']['HTTPStatusCode'])
+        if status != http.HTTPStatus.OK:
+            logging.error(f"{log_text.capitalize()} failed with HTTPStatus {status.description} and response \n {response}")
+            return False
+        else:
+            return True
+
+    def upload_fileobj(self, fileobj, bucket, key):
+        """
+        Upload file object (handle) to an S3 bucket
+        :param bucket: Bucket to upload to
+        :param key: unique key for the item
+
+        :return: True if file was uploaded, else False
+
+        """
+        try:
+            # Upload a new file
+            response = self._cli.put_object(Bucket=bucket, Key=key, Body=fileobj)
+            return self.__class__._success_response(response, 'upload')
+        except Exception as exn:
+            logging.exception(exn)
+            return False
+
+    def download_fileobj(self, bucket, key, filepath_or_buffer):
+        """
+        Download file object from a S3 bucket.
+
+        :param bucket: bucket name
+        :param key: key for the item
+        :param filepath_or_buffer: full filepath for downloaded item
+
+        :return: True if file was downloaded, else False
+        """        
+        #with open(filepath_or_buffer, 'wb+') as f_hnd:
+        try:
+            response = self._cli.get_object(Bucket=bucket, Key=key)
+            if self.__class__._success_response(response, 'download'):
+                with open(filepath_or_buffer, 'wb+') as f_hnd:
+                    for x in response['Body']:
+                        f_hnd.write(x)
+                    return True
+            else:
+                return False
+        except ClientError as e:
+            logging.exception(e)
+            return False
+        except Exception as e:
+            logging.exception(e)
+            return False
         return True
 
     def list_items(self, bucket_name):
