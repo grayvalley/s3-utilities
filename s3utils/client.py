@@ -145,7 +145,34 @@ class S3Client:
             logger.exception(exn)
             return False
 
-    def download_fileobj(self, bucket, key, filepath_or_buffer):
+    def download_fileobj(self, bucket, key, stream_handle):
+        """
+        Download file object from a S3 bucket.
+
+        :param bucket: bucket name
+        :param key: key for the item
+        :param stream_handle: binary file stream handle or buffer.
+
+        :return: True if file was downloaded, else False
+        """        
+        #with open(filepath_or_buffer, 'wb+') as f_hnd:
+        try:
+            response = self._cli.get_object(Bucket=bucket, Key=key)
+            if self.__class__._success_response(response, 'download'):
+                for x in response['Body']:
+                    stream_handle.write(x)
+                return True
+            else:
+                return False
+        except ClientError as e:
+            logger.exception(e)
+            return False
+        except Exception as e:
+            logger.exception(e)
+            return False
+        return True
+
+    def download_fileobj2(self, bucket, key, stream_handle):
         """
         Download file object from a S3 bucket.
 
@@ -159,10 +186,9 @@ class S3Client:
         try:
             response = self._cli.get_object(Bucket=bucket, Key=key)
             if self.__class__._success_response(response, 'download'):
-                with open(filepath_or_buffer, 'wb+') as f_hnd:
-                    for x in response['Body']:
-                        f_hnd.write(x)
-                    return True
+                for x in response['Body']:
+                    stream_handle.write(x)
+                return True
             else:
                 return False
         except ClientError as e:
@@ -171,7 +197,7 @@ class S3Client:
         except Exception as e:
             logger.exception(e)
             return False
-        return True
+        return True        
 
     def list_items(self, bucket_name):
         """
