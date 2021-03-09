@@ -4,6 +4,7 @@ Utility tool for storing and downloading pandas DataFrames to and from AWS S3.
 
 ## Create Connection Client
 ```python
+from s3utils import S3Client
 
 # create a client by explicitly passing auth. details.
 client = S3Client(aws_access_key_id, aws_secret_access_key)
